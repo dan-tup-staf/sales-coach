@@ -9,7 +9,7 @@ const SHEET_CSV_URL = null;
 // 1. Google Sheets → Plik → Udostępnij → Opublikuj w internecie
 // 2. Wybierz arkusz → Format: CSV → Opublikuj
 // 3. Wklej URL tutaj, np.:
-// const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/TWOJ_ID/export?format=csv&gid=0";
+// const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1YztcU-sOvw3vlW3wxQfh5THjqYUZ7ODc-7ZK8xy3LvI/edit?usp=sharing";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // DANE DEMO (używane gdy SHEET_CSV_URL jest null)
