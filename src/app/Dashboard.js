@@ -123,7 +123,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (SHEET_CSV_URL) {
-      fetch(SHEET_CSV_URL)
+      fetch('/api/sheets')
         .then(r => r.text())
         .then(csv => {
           const parsed = parseCSVtoData(csv);
