@@ -122,7 +122,6 @@ export default function Dashboard() {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    if (SHEET_CSV_URL) {
       fetch('/api/sheets')
         .then(r => r.text())
         .then(csv => {
@@ -131,7 +130,6 @@ export default function Dashboard() {
         })
         .catch(console.error)
         .finally(() => setLoading(false));
-    }
     setTimeout(() => setLoaded(true), 100);
   }, []);
 
