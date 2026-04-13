@@ -1,6 +1,6 @@
 // API Route - server-side proxy do Google Sheets (omija CORS)
 export async function GET() {
-  const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT2efOJke6RX-tRxFcIl6SsK7Z0jN79z4AfDo0ECENhGh2KOMvchcmdUm5V1h90S6PBL7tXBq6CEgAv/pub?gid=0&single=true&output=csv';
+  const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/1YztcU-sOvw3vlW3wxQfh5THjqYUZ7ODc-7ZK8xy3LvI/export?format=csv&gid=0';
 
   try {
     const response = await fetch(SHEET_CSV_URL, {
