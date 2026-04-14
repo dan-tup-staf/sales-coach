@@ -12,13 +12,13 @@ const DEMO_DATA = { reps: [] };
 // GOOGLE SHEETS PARSER
 // ═══════════════════════════════════════════════════════════════════════════
 function parseCSVtoData(csvText) {
-  const lines = csvText.split('\n').filter(l => l.trim());
-  if (lines.length < 2) return null;
-  const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+  const rows = parseCSVFull(csvText);
+  if (rows.length < 2) return null;
+  const headers = rows[0].map(h => h.trim().toLowerCase());
   const repsMap = {};
-  for (let i = 1; i < lines.length; i++) {
-    const row = parseCSVRow(lines[i]);
-    const get = (col) => { const idx = headers.indexOf(col); return idx >= 0 ? row[idx]?.trim() : ''; };
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    const get = (col) => { const idx = headers.indexOf(col); return idx >= 0 ? (row[idx] || '').trim() : ''; };
     const repName = get('handlowiec');
     if (!repName) continue;
     const repId = repName.toLowerCase().replace(/\s+/g, '_');
@@ -43,15 +43,38 @@ function parseCSVtoData(csvText) {
   return reps.length > 0 ? { reps } : null;
 }
 
-function parseCSVRow(line) {
-  const result = []; let current = ''; let inQuotes = false;
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i];
-    if (ch === '"') { if (inQuotes && line[i + 1] === '"') { current += '"'; i++; } else { inQuotes = !inQuotes; } }
-    else if (ch === ',' && !inQuotes) { result.push(current); current = ''; }
-    else { current += ch; }
+// Full CSV parser that correctly handles multiline quoted fields
+function parseCSVFull(text) {
+  const rows = []; let row = []; let field = ''; let inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        if (text[i + 1] === '"') { field += '"'; i++; }
+        else { inQuotes = false; }
+      } else {
+        field += ch;
+      }
+    } else {
+      if (ch === '"') { inQuotes = true; }
+      else if (ch === ',') { row.push(field); field = ''; }
+      else if (ch === '\n' || (ch === '\r' && text[i + 1] === '\n')) {
+        if (ch === '\r') i++;
+        row.push(field); field = '';
+        if (row.some(f => f.trim())) rows.push(row);
+        row = [];
+      } else if (ch === '\r') {
+        row.push(field); field = '';
+        if (row.some(f => f.trim())) rows.push(row);
+        row = [];
+      } else {
+        field += ch;
+      }
+    }
   }
-  result.push(current); return result;
+  row.push(field);
+  if (row.some(f => f.trim())) rows.push(row);
+  return rows;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
