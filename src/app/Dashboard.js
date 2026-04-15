@@ -18,7 +18,7 @@ function parseCSVtoData(csvText) {
   const repsMap = {};
   for (let i = 1; i < rows.length; i++) {
     const row = rows[i];
-    const get = (col) => { const idx = headers.indexOf(col); return idx >= 0 ? (row[idx] || '').trim() : ''; };
+    const get = (col) => { let idx = headers.indexOf(col); if (idx < 0 && col === 'rel_strengths') idx = headers.indexOf('rel_strenghts'); return idx >= 0 ? (row[idx] || '').trim() : ''; };
     const repName = get('handlowiec');
     if (!repName) continue;
     const repId = repName.toLowerCase().replace(/\s+/g, '_');
