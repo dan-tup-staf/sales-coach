@@ -413,11 +413,33 @@ function Overview({ meetings, allMeetings, getPatterns, loaded, selectedMonth, a
           <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
             <Card delay={0.4} loaded={loaded} style={{ flex: 1, minWidth: 280 }}>
               <h3 style={{ ...S.cardTitle, color: '#22C55E' }}>✦ Powtarzające się mocne strony</h3>
-              <Items items={dedup(sp.strengths.concat(rp.strengths), 4)} color="#22C55E"/>
+              {dedup(sp.strengths, 3).length > 0 && (
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#22C55E88', marginBottom: 8 }}>Kwalifikacja MEDDIC</div>
+                  <Items items={dedup(sp.strengths, 3)} color="#22C55E"/>
+                </div>
+              )}
+              {dedup(rp.strengths, 3).length > 0 && (
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#22C55E88', marginBottom: 8 }}>Budowanie relacji</div>
+                  <Items items={dedup(rp.strengths, 3)} color="#22C55E"/>
+                </div>
+              )}
             </Card>
             <Card delay={0.5} loaded={loaded} style={{ flex: 1, minWidth: 280 }}>
               <h3 style={{ ...S.cardTitle, color: '#EAB308' }}>△ Powtarzające się do poprawy</h3>
-              <Items items={dedup(sp.weaknesses.concat(rp.weaknesses), 4)} color="#EAB308"/>
+              {dedup(sp.weaknesses, 3).length > 0 && (
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#EAB30888', marginBottom: 8 }}>Kwalifikacja MEDDIC</div>
+                  <Items items={dedup(sp.weaknesses, 3)} color="#EAB308"/>
+                </div>
+              )}
+              {dedup(rp.weaknesses, 3).length > 0 && (
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#EAB30888', marginBottom: 8 }}>Budowanie relacji</div>
+                  <Items items={dedup(rp.weaknesses, 3)} color="#EAB308"/>
+                </div>
+              )}
             </Card>
           </div>
           <Card delay={0.6} loaded={loaded}>
