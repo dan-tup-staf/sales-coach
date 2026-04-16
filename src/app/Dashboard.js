@@ -1,13 +1,10 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
-
 // ═══════════════════════════════════════════════════════════════════════════
 // KONFIGURACJA
 // ═══════════════════════════════════════════════════════════════════════════
 const SHEET_CSV_URL = null;
-
 const DEMO_DATA = { reps: [] };
-
 // ═══════════════════════════════════════════════════════════════════════════
 // GOOGLE SHEETS PARSER
 // ═══════════════════════════════════════════════════════════════════════════
@@ -36,13 +33,13 @@ function parseCSVtoData(csvText) {
       qualification: parseInt(get('ocena_kwalifikacji')) || 0,
       sales: { strengths: tryParseJSON(get('sales_strengths')), weaknesses: tryParseJSON(get('sales_weaknesses')), actions: tryParseJSON(get('sales_actions')) },
       relationship: { strengths: tryParseJSON(get('rel_strengths')), weaknesses: tryParseJSON(get('rel_weaknesses')), actions: tryParseJSON(get('rel_actions')) },
+      control: { strengths: tryParseJSON(get('control_strengths')), weaknesses: tryParseJSON(get('control_weaknesses')), actions: tryParseJSON(get('control_actions')) },
     });
   }
   const reps = Object.values(repsMap);
   reps.forEach(r => r.meetings.sort((a, b) => b.date.localeCompare(a.date)));
   return reps.length > 0 ? { reps } : null;
 }
-
 // Full CSV parser that correctly handles multiline quoted fields
 function parseCSVFull(text) {
   const rows = []; let row = []; let field = ''; let inQuotes = false;
@@ -76,7 +73,6 @@ function parseCSVFull(text) {
   if (row.some(f => f.trim())) rows.push(row);
   return rows;
 }
-
 // ═══════════════════════════════════════════════════════════════════════════
 // HELPERS
 // ═══════════════════════════════════════════════════════════════════════════
@@ -85,35 +81,29 @@ const HEALTH = {
   yellow: { label: 'Wymaga uwagi',     bg: '#2D2305', border: '#CA8A04', text: '#FDE68A', dot: '#EAB308' },
   green:  { label: 'Na dobrej drodze', bg: '#052E16', border: '#16A34A', text: '#86EFAC', dot: '#22C55E' },
 };
-
 const MONTH_NAMES = ['Styczeń','Luty','Marzec','Kwiecień','Maj','Czerwiec','Lipiec','Sierpień','Wrzesień','Październik','Listopad','Grudzień'];
-
 function getMonthKey(dateStr) {
   if (!dateStr) return null;
   const parts = dateStr.split('-');
   if (parts.length < 2) return null;
   return `${parts[0]}-${parts[1]}`;
 }
-
 function getMonthLabel(key) {
   if (!key) return 'Wszystkie';
   const [y, m] = key.split('-');
   return `${MONTH_NAMES[parseInt(m) - 1]} ${y}`;
 }
-
 function dedup(arr, n) {
   const seen = new Set(); const res = [];
   for (const item of arr) { const k = item.slice(0, 40); if (!seen.has(k)) { seen.add(k); res.push(item); } if (res.length >= n) break; }
   return res;
 }
-
 function calcStats(meetings) {
   if (!meetings.length) return { avg: 0, count: 0, red: 0, yellow: 0, green: 0 };
   const avg = Math.round(meetings.reduce((s, m) => s + m.qualification, 0) / meetings.length);
   const health = meetings.reduce((a, m) => { a[m.dealHealth]++; return a; }, { red: 0, yellow: 0, green: 0 });
   return { avg, count: meetings.length, ...health };
 }
-
 // ═══════════════════════════════════════════════════════════════════════════
 // MAIN DASHBOARD
 // ═══════════════════════════════════════════════════════════════════════════
@@ -126,7 +116,6 @@ export default function Dashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState('all');
-
   useEffect(() => {
     fetch('/api/sheets')
       .then(r => r.text())
@@ -135,11 +124,9 @@ export default function Dashboard() {
       .finally(() => setLoading(false));
     setTimeout(() => setLoaded(true), 100);
   }, []);
-
   useEffect(() => {
     if (data.reps.length > 0 && !selectedRep) setSelectedRep(data.reps[0]);
   }, [data, selectedRep]);
-
   // Available months for selected rep
   const availableMonths = useMemo(() => {
     if (!selectedRep) return [];
@@ -147,14 +134,12 @@ export default function Dashboard() {
     selectedRep.meetings.forEach(m => { const k = getMonthKey(m.date); if (k) months.add(k); });
     return [...months].sort().reverse();
   }, [selectedRep]);
-
   // Filtered meetings
   const filteredMeetings = useMemo(() => {
     if (!selectedRep) return [];
     if (selectedMonth === 'all') return selectedRep.meetings;
     return selectedRep.meetings.filter(m => getMonthKey(m.date) === selectedMonth);
   }, [selectedRep, selectedMonth]);
-
   if (loading || !selectedRep) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#0A0A0A', color: '#666', fontSize: 14 }}>
@@ -162,22 +147,18 @@ export default function Dashboard() {
       </div>
     );
   }
-
   const rep = selectedRep;
   const meetings = filteredMeetings;
   const current = selectedMeeting && meetings.find(m => m.id === selectedMeeting.id) ? selectedMeeting : meetings[0];
   const avgQ = meetings.length ? Math.round(meetings.reduce((s, m) => s + m.qualification, 0) / meetings.length) : 0;
   const healthCounts = meetings.reduce((a, m) => { a[m.dealHealth]++; return a; }, { red: 0, yellow: 0, green: 0 });
-
   const getPatterns = (cat) => ({
     strengths: meetings.flatMap(m => m[cat].strengths),
     weaknesses: meetings.flatMap(m => m[cat].weaknesses),
     actions: meetings.flatMap(m => m[cat].actions),
   });
-
   const selectRep = (r) => { setSelectedRep(r); setSelectedMeeting(null); setActiveTab('overview'); setSidebarOpen(false); setSelectedMonth('all'); };
   const selectMeeting = (m) => { setSelectedMeeting(m); setActiveTab('sales'); setSidebarOpen(false); };
-
   return (
     <div style={S.root}>
       <button onClick={() => setSidebarOpen(!sidebarOpen)} style={S.hamburger}>
@@ -186,7 +167,6 @@ export default function Dashboard() {
         <span style={{ ...S.hamburgerLine, transform: sidebarOpen ? 'rotate(-45deg) translate(4px, -4px)' : 'none' }} />
       </button>
       {sidebarOpen && <div onClick={() => setSidebarOpen(false)} style={S.overlay} />}
-
       <aside style={{ ...S.sidebar, ...(sidebarOpen ? S.sidebarOpen : {}), opacity: loaded ? 1 : 0, transition: 'all 0.4s cubic-bezier(0.16,1,0.3,1)' }}>
         <div style={S.logo}>
           <div style={S.logoIcon}>
@@ -197,7 +177,6 @@ export default function Dashboard() {
           </div>
           <span style={S.logoText}>Sales Coach</span>
         </div>
-
         <div style={S.section}>
           <div style={S.sectionLabel}>ZESPÓŁ</div>
           {data.reps.map(r => (
@@ -210,7 +189,6 @@ export default function Dashboard() {
             </button>
           ))}
         </div>
-
         {/* MONTH FILTER */}
         <div style={S.section}>
           <div style={S.sectionLabel}>MIESIĄC</div>
@@ -227,7 +205,6 @@ export default function Dashboard() {
             </select>
           </div>
         </div>
-
         <div style={S.section}>
           <div style={S.sectionLabel}>SPOTKANIA {selectedMonth !== 'all' ? `(${getMonthLabel(selectedMonth)})` : ''}</div>
           {meetings.length === 0 && (
@@ -250,7 +227,6 @@ export default function Dashboard() {
           })}
         </div>
       </aside>
-
       <main style={S.main}>
         <header style={{ ...S.header, opacity: loaded ? 1 : 0, transform: loaded ? 'translateY(0)' : 'translateY(-10px)', transition: 'all 0.5s cubic-bezier(0.16,1,0.3,1) 0.2s' }}>
           <div>
@@ -272,22 +248,22 @@ export default function Dashboard() {
             })}
           </div>
         </header>
-
         <nav style={S.tabs}>
           {[
             { id: 'overview', label: 'Przegląd' },
             { id: 'sales', label: 'Technika sprzedaży' },
             { id: 'relationship', label: 'Budowanie relacji' },
+            { id: 'control', label: 'Kontrola nad dealem' },
           ].map(t => (
             <button key={t.id} onClick={() => setActiveTab(t.id)} style={{ ...S.tab, color: activeTab === t.id ? '#E8B931' : '#666', borderBottomColor: activeTab === t.id ? '#E8B931' : 'transparent' }}>{t.label}</button>
           ))}
         </nav>
-
         <div>
           {activeTab === 'overview' && <Overview meetings={meetings} allMeetings={rep.meetings} getPatterns={getPatterns} loaded={loaded} selectedMonth={selectedMonth} availableMonths={availableMonths} />}
           {activeTab === 'sales' && current && <Detail meeting={current} cat="sales" title="Technika sprzedaży" loaded={loaded} />}
           {activeTab === 'relationship' && current && <Detail meeting={current} cat="relationship" title="Budowanie relacji" loaded={loaded} />}
-          {(activeTab === 'sales' || activeTab === 'relationship') && !current && (
+          {activeTab === 'control' && current && <Detail meeting={current} cat="control" title="Kontrola nad dealem" loaded={loaded} />}
+          {(activeTab === 'sales' || activeTab === 'relationship' || activeTab === 'control') && !current && (
             <div style={{ padding: 40, textAlign: 'center', color: '#555', fontSize: 14 }}>Wybierz spotkanie z listy po lewej</div>
           )}
         </div>
@@ -295,14 +271,13 @@ export default function Dashboard() {
     </div>
   );
 }
-
 // ═══════════════════════════════════════════════════════════════════════════
 // OVERVIEW TAB — with month-over-month progress
 // ═══════════════════════════════════════════════════════════════════════════
 function Overview({ meetings, allMeetings, getPatterns, loaded, selectedMonth, availableMonths }) {
   const sp = getPatterns('sales');
   const rp = getPatterns('relationship');
-
+  const cp = getPatterns('control');
   // Calculate month-over-month stats for progress section
   const monthStats = useMemo(() => {
     const byMonth = {};
@@ -315,15 +290,12 @@ function Overview({ meetings, allMeetings, getPatterns, loaded, selectedMonth, a
     const sorted = Object.keys(byMonth).sort();
     return sorted.map(k => ({ key: k, label: getMonthLabel(k), ...calcStats(byMonth[k]) }));
   }, [allMeetings]);
-
   const getDelta = (curr, prev) => {
     if (prev === undefined || prev === null) return null;
     return curr - prev;
   };
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-
       {/* MONTH-OVER-MONTH PROGRESS */}
       {monthStats.length > 1 && (
         <Card delay={0.2} loaded={loaded}>
@@ -381,7 +353,6 @@ function Overview({ meetings, allMeetings, getPatterns, loaded, selectedMonth, a
           </div>
         </Card>
       )}
-
       {/* TREND CHART */}
       {meetings.length > 0 && (
         <Card delay={0.3} loaded={loaded}>
@@ -406,7 +377,6 @@ function Overview({ meetings, allMeetings, getPatterns, loaded, selectedMonth, a
           </div>
         </Card>
       )}
-
       {/* PATTERNS */}
       {meetings.length > 0 && (
         <>
@@ -415,14 +385,20 @@ function Overview({ meetings, allMeetings, getPatterns, loaded, selectedMonth, a
               <h3 style={{ ...S.cardTitle, color: '#22C55E' }}>✦ Powtarzające się mocne strony</h3>
               {dedup(sp.strengths, 3).length > 0 && (
                 <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#22C55E88', marginBottom: 8 }}>Kwalifikacja MEDDIC</div>
+                  <div style={S.patternLabel('#22C55E')}>Kwalifikacja MEDDIC</div>
                   <Items items={dedup(sp.strengths, 3)} color="#22C55E"/>
                 </div>
               )}
               {dedup(rp.strengths, 3).length > 0 && (
-                <div>
-                  <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#22C55E88', marginBottom: 8 }}>Budowanie relacji</div>
+                <div style={{ marginBottom: 16 }}>
+                  <div style={S.patternLabel('#22C55E')}>Budowanie relacji</div>
                   <Items items={dedup(rp.strengths, 3)} color="#22C55E"/>
+                </div>
+              )}
+              {dedup(cp.strengths, 3).length > 0 && (
+                <div>
+                  <div style={S.patternLabel('#22C55E')}>Kontrola nad dealem</div>
+                  <Items items={dedup(cp.strengths, 3)} color="#22C55E"/>
                 </div>
               )}
             </Card>
@@ -430,25 +406,30 @@ function Overview({ meetings, allMeetings, getPatterns, loaded, selectedMonth, a
               <h3 style={{ ...S.cardTitle, color: '#EAB308' }}>△ Powtarzające się do poprawy</h3>
               {dedup(sp.weaknesses, 3).length > 0 && (
                 <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#EAB30888', marginBottom: 8 }}>Kwalifikacja MEDDIC</div>
+                  <div style={S.patternLabel('#EAB308')}>Kwalifikacja MEDDIC</div>
                   <Items items={dedup(sp.weaknesses, 3)} color="#EAB308"/>
                 </div>
               )}
               {dedup(rp.weaknesses, 3).length > 0 && (
-                <div>
-                  <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#EAB30888', marginBottom: 8 }}>Budowanie relacji</div>
+                <div style={{ marginBottom: 16 }}>
+                  <div style={S.patternLabel('#EAB308')}>Budowanie relacji</div>
                   <Items items={dedup(rp.weaknesses, 3)} color="#EAB308"/>
+                </div>
+              )}
+              {dedup(cp.weaknesses, 3).length > 0 && (
+                <div>
+                  <div style={S.patternLabel('#EAB308')}>Kontrola nad dealem</div>
+                  <Items items={dedup(cp.weaknesses, 3)} color="#EAB308"/>
                 </div>
               )}
             </Card>
           </div>
           <Card delay={0.6} loaded={loaded}>
             <h3 style={S.cardTitle}><span style={{ color: '#E8B931' }}>⚡</span> Priorytetowe action points</h3>
-            <Actions items={dedup(sp.actions.concat(rp.actions), 5)}/>
+            <Actions items={dedup(sp.actions.concat(rp.actions).concat(cp.actions), 6)}/>
           </Card>
         </>
       )}
-
       {meetings.length === 0 && (
         <Card delay={0.3} loaded={loaded}>
           <div style={{ padding: 20, textAlign: 'center', color: '#555' }}>Brak spotkań w wybranym okresie</div>
@@ -457,7 +438,6 @@ function Overview({ meetings, allMeetings, getPatterns, loaded, selectedMonth, a
     </div>
   );
 }
-
 // ═══════════════════════════════════════════════════════════════════════════
 // DETAIL TAB
 // ═══════════════════════════════════════════════════════════════════════════
@@ -496,7 +476,6 @@ function Detail({ meeting, cat, title, loaded }) {
     </div>
   );
 }
-
 // ═══════════════════════════════════════════════════════════════════════════
 // SHARED COMPONENTS
 // ═══════════════════════════════════════════════════════════════════════════
@@ -509,7 +488,6 @@ function Card({ children, delay = 0, loaded, style = {} }) {
     }}>{children}</div>
   );
 }
-
 function Items({ items, color }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -522,7 +500,6 @@ function Items({ items, color }) {
     </div>
   );
 }
-
 function Actions({ items }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -541,7 +518,6 @@ function Actions({ items }) {
     </div>
   );
 }
-
 function QualCircle({ value, color }) {
   const r = 22; const c = Math.PI * 2 * r;
   return (
@@ -556,7 +532,6 @@ function QualCircle({ value, color }) {
     </div>
   );
 }
-
 function MiniPill({ color, bg, count }) {
   return (
     <span style={{
@@ -569,7 +544,6 @@ function MiniPill({ color, bg, count }) {
     </span>
   );
 }
-
 // ═══════════════════════════════════════════════════════════════════════════
 // STYLES
 // ═══════════════════════════════════════════════════════════════════════════
@@ -648,6 +622,10 @@ const S = {
     fontSize: 14, fontWeight: 600, color: '#999', marginBottom: 16,
     display: 'flex', alignItems: 'center', gap: 8, letterSpacing: '-0.01em',
   },
+  patternLabel: (color) => ({
+    fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
+    letterSpacing: '0.05em', color: `${color}88`, marginBottom: 8,
+  }),
   trendRow: { display: 'flex', alignItems: 'flex-end', gap: 16, justifyContent: 'center', paddingTop: 8, overflowX: 'auto' },
   trendCol: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 },
   th: { padding: '8px 12px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: '#555', borderBottom: '1px solid #1E1E1E', letterSpacing: '0.05em' },
