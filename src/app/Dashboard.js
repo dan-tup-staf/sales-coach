@@ -29,7 +29,23 @@ function parseCSVtoData(csvText) {
         role: get('rola') || 'Account Executive', meetings: [],
       };
     }
-    const tryParseJSON = (val) => { try { return JSON.parse(val); } catch { return val ? [val] : []; } };
+    const tryParseJSON = (val) => {
+      if (!val) return [];
+      // 1. Spróbuj standardowego JSON (format ["a","b","c"])
+      try {
+        const parsed = JSON.parse(val);
+        if (Array.isArray(parsed)) return parsed.map(x => String(x).trim()).filter(Boolean);
+      } catch { /* fallthrough */ }
+      // 2. Obsłuż format "[a,b,c]" (nawiasy kwadratowe, przecinki, bez cudzysłowów — częsty output z Claude)
+      const trimmed = val.trim();
+      if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+        const inner = trimmed.slice(1, -1);
+        const parts = inner.split(/\s*,\s*/).map(s => s.trim()).filter(Boolean);
+        if (parts.length > 0) return parts;
+      }
+      // 3. Ostatecznie: całość jako jeden item
+      return [val];
+    };
     repsMap[repId].meetings.push({
       id: `m_${i}`, date: get('data'), type: get('typ_spotkania') || 'Rozmowa',
       client: get('klient'), dealHealth: get('deal_health') || 'yellow',
@@ -647,11 +663,32 @@ function Card({ children, delay = 0, loaded, style = {} }) {
 
 function Items({ items, color }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       {items.map((item, i) => (
-        <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-          <div style={{ width: 6, height: 6, borderRadius: '50%', background: `${color}66`, marginTop: 7, flexShrink: 0 }}/>
-          <div style={{ fontSize: 13, color: '#BBB', lineHeight: 1.55 }}>{item}</div>
+        <div key={i} style={{
+          display: 'flex',
+          gap: 12,
+          alignItems: 'flex-start',
+          padding: '10px 12px',
+          borderRadius: 8,
+          background: `${color}0A`,
+          borderLeft: `3px solid ${color}66`,
+          transition: 'all 0.15s ease',
+        }}>
+          <div style={{
+            fontSize: 10,
+            fontWeight: 700,
+            color: `${color}BB`,
+            background: `${color}1A`,
+            borderRadius: 4,
+            padding: '2px 6px',
+            minWidth: 20,
+            textAlign: 'center',
+            flexShrink: 0,
+            marginTop: 1,
+            letterSpacing: '0.02em',
+          }}>{i + 1}</div>
+          <div style={{ fontSize: 13, color: '#C8C8C8', lineHeight: 1.55, flex: 1 }}>{item}</div>
         </div>
       ))}
     </div>
