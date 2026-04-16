@@ -34,8 +34,8 @@ function parseCSVtoData(csvText) {
       id: `m_${i}`, date: get('data'), type: get('typ_spotkania') || 'Rozmowa',
       client: get('klient'), dealHealth: get('deal_health') || 'yellow',
       qualification: parseInt(get('ocena_kwalifikacji')) || 0,
-      relationshipScore: get('ocena_relacji') ? parseInt(get('ocena_relacji')) : null,
-      controlScore: get('ocena_kontroli') ? parseInt(get('ocena_kontroli')) : null,
+      relationshipScore: get('relationship_score') ? parseInt(get('relationship_score')) : null,
+      controlScore: get('control_score') ? parseInt(get('control_score')) : null,
       sales: { strengths: tryParseJSON(get('sales_strengths')), weaknesses: tryParseJSON(get('sales_weaknesses')), actions: tryParseJSON(get('sales_actions')) },
       relationship: { strengths: tryParseJSON(get('rel_strengths')), weaknesses: tryParseJSON(get('rel_weaknesses')), actions: tryParseJSON(get('rel_actions')) },
       control: { strengths: tryParseJSON(get('control_strengths')), weaknesses: tryParseJSON(get('control_weaknesses')), actions: tryParseJSON(get('control_actions')) },
@@ -277,14 +277,40 @@ export default function Dashboard() {
         </header>
 
         <nav style={S.tabs}>
-          {[
-            { id: 'overview', label: 'Przegląd' },
-            { id: 'sales', label: 'Technika sprzedaży' },
-            { id: 'relationship', label: 'Budowanie relacji' },
-            { id: 'control', label: 'Kontrola nad dealem' },
-          ].map(t => (
-            <button key={t.id} onClick={() => setActiveTab(t.id)} style={{ ...S.tab, color: activeTab === t.id ? '#E8B931' : '#666', borderBottomColor: activeTab === t.id ? '#E8B931' : 'transparent' }}>{t.label}</button>
-          ))}
+          <button
+            onClick={() => setActiveTab('overview')}
+            style={{
+              ...S.primaryTab,
+              background: activeTab === 'overview' ? 'linear-gradient(135deg, #1A1706 0%, #2D2305 100%)' : '#0F0F0F',
+              borderColor: activeTab === 'overview' ? '#E8B93166' : '#1E1E1E',
+              color: activeTab === 'overview' ? '#E8B931' : '#888',
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0 }}>
+              <rect x="2" y="2" width="7" height="7" rx="1.5" fill="currentColor" opacity="0.9"/>
+              <rect x="11" y="2" width="7" height="4" rx="1.5" fill="currentColor" opacity="0.6"/>
+              <rect x="11" y="8" width="7" height="10" rx="1.5" fill="currentColor" opacity="0.9"/>
+              <rect x="2" y="11" width="7" height="7" rx="1.5" fill="currentColor" opacity="0.6"/>
+            </svg>
+            <span>Przegląd</span>
+            {activeTab === 'overview' && (
+              <span style={S.primaryTabBadge}>główny widok</span>
+            )}
+          </button>
+
+          <div style={S.tabDivider}>
+            <span style={S.tabDividerLabel}>SZCZEGÓŁY SPOTKANIA</span>
+          </div>
+
+          <div style={S.secondaryTabs}>
+            {[
+              { id: 'sales', label: 'Technika sprzedaży' },
+              { id: 'relationship', label: 'Budowanie relacji' },
+              { id: 'control', label: 'Kontrola nad dealem' },
+            ].map(t => (
+              <button key={t.id} onClick={() => setActiveTab(t.id)} style={{ ...S.tab, color: activeTab === t.id ? '#E8B931' : '#666', borderBottomColor: activeTab === t.id ? '#E8B931' : 'transparent' }}>{t.label}</button>
+            ))}
+          </div>
         </nav>
 
         <div>
@@ -598,7 +624,7 @@ function TrendChart({ meetings, selectedMonth, loaded }) {
         <div style={{ padding: '40px 20px', textAlign: 'center', color: '#555', fontSize: 13 }}>
           Brak danych dla kategorii „{metric.label}".
           <div style={{ fontSize: 11, color: '#444', marginTop: 8 }}>
-            Aby zobaczyć trend, zaktualizuj prompt w Make, aby zwracał pole {metric.id === 'relationship' ? '"ocena_relacji"' : '"ocena_kontroli"'} (0-100).
+            Aby zobaczyć trend, zaktualizuj prompt w Make, aby zwracał pole {metric.id === 'relationship' ? '"relationship_score"' : '"control_score"'} (0-100).
           </div>
         </div>
       )}
@@ -746,7 +772,37 @@ const S = {
   subtitle: { fontSize: 13, color: '#666', marginTop: 4 },
   pills: { display: 'flex', gap: 8, flexWrap: 'wrap' },
   pill: { display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 20 },
-  tabs: { display: 'flex', gap: 2, marginBottom: 20, borderBottom: '1px solid #1A1A1A', flexWrap: 'wrap' },
+  tabs: {
+    display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20,
+    flexWrap: 'wrap', paddingBottom: 0,
+  },
+  primaryTab: {
+    display: 'inline-flex', alignItems: 'center', gap: 10,
+    padding: '12px 20px', borderRadius: 12,
+    fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em',
+    border: '1px solid', cursor: 'pointer',
+    transition: 'all 0.2s cubic-bezier(0.16,1,0.3,1)',
+    boxShadow: '0 1px 0 rgba(255,255,255,0.03) inset',
+  },
+  primaryTabBadge: {
+    fontSize: 10, fontWeight: 600, letterSpacing: '0.08em',
+    textTransform: 'uppercase',
+    padding: '3px 8px', borderRadius: 6,
+    background: '#E8B93122', color: '#E8B931',
+    border: '1px solid #E8B93133',
+  },
+  tabDivider: {
+    display: 'flex', alignItems: 'center', gap: 10,
+  },
+  tabDividerLabel: {
+    fontSize: 10, fontWeight: 600, color: '#444',
+    letterSpacing: '0.1em', textTransform: 'uppercase',
+    whiteSpace: 'nowrap',
+  },
+  secondaryTabs: {
+    display: 'flex', gap: 2, flexWrap: 'wrap',
+    borderBottom: '1px solid #1A1A1A',
+  },
   tab: {
     padding: '10px 18px', fontSize: 13, fontWeight: 500, background: 'none',
     border: 'none', borderBottom: '2px solid transparent', cursor: 'pointer',
